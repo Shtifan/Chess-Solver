@@ -4,17 +4,16 @@ import sys
 import cv2
 import numpy as np
 
-input_path = "./image.png"
+image_path = "./image.png"
 stockfish = Stockfish("./stockfish.exe")
 
 
-def get_best_move(stockfish, fen):
-    stockfish.set_fen_position(fen)
-    best_move = stockfish.get_best_move()
-    return best_move
+fen = get_fen_from_image_path(image_path)
+if not stockfish.is_fen_valid(fen + " w - - 0 1"):
+    sys.exit()
 
 
-fen = get_fen_from_image_path(input_path)
+stockfish.set_fen_position(fen)
 
-best_move = get_best_move(stockfish, fen)
+best_move = stockfish.get_best_move()
 print(best_move)
