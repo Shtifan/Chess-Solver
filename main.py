@@ -46,7 +46,7 @@ def get_best_move(stockfish, fen):
     return best_move
 
 
-def draw_best_move(image, move, rotate=False):
+def draw_best_move(image, move):
     COL_MAPPING = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
 
     height, width, _ = image.shape
@@ -59,12 +59,6 @@ def draw_best_move(image, move, rotate=False):
     start_col = COL_MAPPING[start_pos[0]]
     end_row = 8 - int(end_pos[1])
     end_col = COL_MAPPING[end_pos[0]]
-
-    if rotate:
-        start_row = 7 - start_row
-        start_col = 7 - start_col
-        end_row = 7 - end_row
-        end_col = 7 - end_col
 
     start_center = (
         start_col * square_size + square_size // 2,
@@ -97,11 +91,9 @@ print(best_move_white)
 
 draw_best_move(original_image, best_move_white)
 
-fen = rotate_fen(fen)
-
 best_move_black = get_best_move(stockfish, fen + " b - - 0 1")
 print(best_move_black)
 
-draw_best_move(original_image, best_move_black, rotate=True)
+draw_best_move(original_image, best_move_black)
 
 cv2.imwrite(image_path, original_image)
