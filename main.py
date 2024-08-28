@@ -4,10 +4,10 @@ import sys
 import cv2
 import numpy as np
 
-IMAGE_PATH = "./image.png"
-STOCKFISH_PATH = "./stockfish.exe"
+image_path = "./image.png"
+stockfish_path = "./stockfish.exe"
 
-stockfish = Stockfish(STOCKFISH_PATH)
+stockfish = Stockfish(stockfish_path)
 
 def crop_chessboard(image_path):
     img = cv2.imread(image_path)
@@ -32,7 +32,7 @@ def get_best_move(stockfish, fen):
     return stockfish.get_best_move()
 
 def draw_best_move(image, move):
-    COL_MAPPING = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
+    col_mapping = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
     height, width, _ = image.shape
     square_size = width // 8
 
@@ -40,9 +40,9 @@ def draw_best_move(image, move):
     end_pos = move[2:]
 
     start_row = 8 - int(start_pos[1])
-    start_col = COL_MAPPING[start_pos[0]]
+    start_col = col_mapping[start_pos[0]]
     end_row = 8 - int(end_pos[1])
-    end_col = COL_MAPPING[end_pos[0]]
+    end_col = col_mapping[end_pos[0]]
 
     start_center = (start_col * square_size + square_size // 2, start_row * square_size + square_size // 2)
     end_center = (end_col * square_size + square_size // 2, end_row * square_size + square_size // 2)
@@ -52,10 +52,10 @@ def draw_best_move(image, move):
     cv2.arrowedLine(image, start_center, end_center, (0, 0, 255), 2, tipLength=tip_length)
 
 def main():
-    crop_chessboard(IMAGE_PATH)
+    crop_chessboard(image_path)
 
-    original_image = cv2.imread(IMAGE_PATH)
-    fen = get_fen_from_image_path(IMAGE_PATH)
+    original_image = cv2.imread(image_path)
+    fen = get_fen_from_image_path(image_path)
 
     if not stockfish.is_fen_valid(fen + " w - - 0 1"):
         sys.exit()
@@ -68,7 +68,7 @@ def main():
     print(best_move_black)
     draw_best_move(original_image, best_move_black)
 
-    cv2.imwrite(IMAGE_PATH, original_image)
+    cv2.imwrite(image_path, original_image)
 
 if __name__ == "__main__":
     main()
