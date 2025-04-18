@@ -1,9 +1,10 @@
 import sys
 import re
 from image_to_fen import ChessboardPredictor
-from stockfish import Stockfish
-import image_loading
+import load_image
 from config import IMAGE_PATH, STOCKFISH_PATH
+import chess
+import chess.engine
 
 
 def shorten_fen(fen: str) -> str:
@@ -27,10 +28,10 @@ def lengthen_fen(fen: str) -> str:
 
 def get_fen_from_image(image_path: str = IMAGE_PATH) -> str:
     predictor = ChessboardPredictor()
-    img = image_loading.loadImageFromPath(image_path)
+    img = load_image.load_image(image_path)
     if img is None:
         raise Exception(f"Couldn't load image: {image_path}")
-    img = image_loading.resizeAsNeeded(img)
+    img = load_image.resize_image(img)
     tiles, _ = None, None
     try:
         tiles, _ = __import__("chessboard_finder").findGrayscaleTilesInImage(img)
@@ -47,10 +48,27 @@ def get_fen_from_image(image_path: str = IMAGE_PATH) -> str:
     return fen
 
 
-def get_best_move(fen: str, stockfish_path: str = STOCKFISH_PATH) -> str:
-    stockfish = Stockfish(path=stockfish_path)
-    stockfish.set_fen_position(fen)
-    return stockfish.get_best_move()
+def fen_to_best_moves(fen):
+    fen = shorten_fen(fen)
+    engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
+
+    board = chess.Board(fen)
+    white_move = None
+    if board.turn == chess.WHITE:
+        result = engine.play(board, chess.engine.Limit(time=2.0))
+        white_move = result.move.uci()
+
+    if board.turn == chess.BLACK:
+        result = engine.play(board, chess.engine.Limit(time=2.0))
+        black_move = result.move.uci()
+    else:
+        black_board = chess.Board(fen)
+        black_board.turn = chess.BLACK
+        result = engine.play(black_board, chess.engine.Limit(time=2.0))
+        black_move = result.move.uci()
+
+    engine.quit()
+    return white_move, black_move
 
 
 def main():
@@ -59,8 +77,9 @@ def main():
         print("Failed to extract FEN from image.")
         sys.exit(1)
     print(f"Predicted FEN: {fen}")
-    best_move = get_best_move(fen)
-    print(f"Best move: {best_move}")
+    white_move, black_move = fen_to_best_moves(fen)
+    print(f"Best move for White: {white_move}")
+    print(f"Best move for Black: {black_move}")
 
 
 if __name__ == "__main__":

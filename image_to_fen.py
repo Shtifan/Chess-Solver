@@ -3,7 +3,7 @@ import re
 import numpy as np
 import PIL.Image
 import tensorflow as tf
-import image_loading
+import load_image
 import chessboard_finder
 from config import IMAGE_PATH
 
@@ -27,13 +27,13 @@ def lengthen_fen(fen: str) -> str:
     return result
 
 
-def load_graph(frozen_graph_filepath: str) -> tf.Graph:
+def load_graph(model_filepath: str) -> tf.Graph:
     try:
-        with tf.io.gfile.GFile(frozen_graph_filepath, "rb") as f:
+        with tf.io.gfile.GFile(model_filepath, "rb") as f:
             graph_def = tf.compat.v1.GraphDef()
             graph_def.ParseFromString(f.read())
     except Exception as e:
-        print(f"Error loading graph file '{frozen_graph_filepath}': {e}")
+        print(f"Error loading graph file '{model_filepath}': {e}")
         raise
     with tf.compat.v1.Graph().as_default() as graph:
         tf.compat.v1.import_graph_def(graph_def, name="tcb")
@@ -41,9 +41,9 @@ def load_graph(frozen_graph_filepath: str) -> tf.Graph:
 
 
 class ChessboardPredictor:
-    def __init__(self, frozen_graph_path: str = "saved_models/frozen_graph.pb"):
-        print(f"\t Loading model '{frozen_graph_path}'")
-        graph = load_graph(frozen_graph_path)
+    def __init__(self, model_path: str = "saved_models/model.pb"):
+        print(f"\t Loading model '{model_path}'")
+        graph = load_graph(model_path)
         self.sess = tf.compat.v1.Session(graph=graph)
         self.x = graph.get_tensor_by_name("tcb/Input:0")
         self.keep_prob = graph.get_tensor_by_name("tcb/KeepProb:0")
@@ -70,12 +70,12 @@ class ChessboardPredictor:
         return fen, tile_certainties
 
     def make_prediction(self, url: str) -> list:
-        img, url = image_loading.loadImageFromURL(url, max_size_bytes=2000000)
+        img, url = load_image.load_image(url)
         result = [None, None, None]
         if img is None:
             print(f'Couldn\'t load URL: "{url}"')
             return result
-        img = image_loading.resizeAsNeeded(img)
+        img = load_image.resize_image(img)
         if img is None:
             print(f'Image too large to resize: "{url}"')
             return result
@@ -85,11 +85,7 @@ class ChessboardPredictor:
             return result
         fen, tile_certainties = self.get_prediction(tiles)
         certainty = tile_certainties.min()
-        visualize_link = (
-            image_loading.getVisualizeLink(corners, url)
-            if hasattr(image_loading, "getVisualizeLink")
-            else None
-        )
+        visualize_link = None
         result = [fen, certainty, visualize_link]
         return result
 
@@ -102,7 +98,7 @@ def main() -> None:
     image_path = IMAGE_PATH
     unflip = False
     active = "w"
-    img = image_loading.loadImageFromPath(image_path)
+    img = load_image.load_image(image_path)
     if img is None:
         raise Exception(f"Couldn't load image: {image_path}")
     tiles, corners = chessboard_finder.findGrayscaleTilesInImage(img)

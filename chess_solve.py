@@ -7,9 +7,9 @@ print("[1/3] Extracting FEN from image...")
 fen = None
 try:
     from image_to_fen import ChessboardPredictor
-    import image_loading
+    import load_image
 
-    img = image_loading.loadImageFromPath(IMAGE_PATH)
+    img = load_image.load_image(IMAGE_PATH)
     if img is None:
         print(f"Couldn't load image: {IMAGE_PATH}")
         sys.exit(1)
@@ -28,25 +28,25 @@ except Exception as e:
     print(f"Error extracting FEN: {e}")
     sys.exit(1)
 
-print("[2/3] Getting best move from FEN via Stockfish...")
-best_move = None
+print("[2/3] Getting best moves from FEN via Stockfish...")
+white_move = None
+black_move = None
 try:
-    from stockfish import Stockfish
+    from fen_to_best_move import fen_to_best_moves
 
-    stockfish = Stockfish(STOCKFISH_PATH)
-    stockfish.set_fen_position(fen)
-    best_move = stockfish.get_best_move()
-    print(f"Best move: {best_move}")
+    white_move, black_move = fen_to_best_moves(fen)
+    print(f"Best move for White: {white_move}")
+    print(f"Best move for Black: {black_move}")
 except Exception as e:
-    print(f"Error getting best move: {e}")
+    print(f"Error getting best moves: {e}")
     sys.exit(1)
 
-print("[3/3] Drawing best move on board...")
+print("[3/3] Drawing best moves on board...")
 try:
     from draw_best_move import draw_best_move
 
-    output_path = draw_best_move(IMAGE_PATH, best_move)
+    output_path = draw_best_move(IMAGE_PATH, white_move, black_move)
     print(f"Saved: {output_path}")
 except Exception as e:
-    print(f"Error drawing best move: {e}")
+    print(f"Error drawing best moves: {e}")
     sys.exit(1)

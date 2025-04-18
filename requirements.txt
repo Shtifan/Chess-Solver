@@ -1,7 +1,5 @@
-tensorflow
-numpy
-Pillow
-requests
-beautifulsoup4
-python-chess
-stockfish
+tensorflow>=2.0.0
+numpy>=1.19.0
+Pillow>=8.0.0
+python-chess>=1.0.0
+stockfish>=3.10.0
