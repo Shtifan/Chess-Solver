@@ -276,7 +276,7 @@ def findGrayscaleTilesInImage(img):
 
 def main(url):
     print("Loading url %s..." % url)
-    color_img, url = loadImageFromURL(url)
+    color_img, url = load_image.load_image(url)
 
     if color_img is None:
         print("Couldn't load url: %s" % url)
