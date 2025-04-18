@@ -1,54 +1,44 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-# Pass in image of online chessboard screenshot, returns corners of chessboard
-# usage: chessboard_finder.py [-h] urls [urls ...]
-
-# Find orthorectified chessboard corners in image
-
-# positional arguments:
-#   urls        Input image urls
-
-# optional arguments:
-#   -h, --help  show this help message and exit
-
-
-# sudo apt-get install libatlas-base-dev for numpy error, see https://github.com/Kitt-AI/snowboy/issues/262
 import numpy as np
-
-# sudo apt-get install libopenjp2-7 libtiff5
 import PIL.Image
 import argparse
 from time import time
-from helper_image_loading import *
+from image_loading import *
 
 
 def nonmax_suppress_1d(arr, winsize=5):
-    """Return 1d array with only peaks, use neighborhood window of winsize px"""
+    """
+    Return 1d array with only peaks, use neighborhood window of winsize px.
+
+    Parameters:
+    arr (numpy array): Input array.
+    winsize (int): Neighborhood window size. Default is 5.
+
+    Returns:
+    numpy array: Array with only peaks.
+    """
     _arr = arr.copy()
-
     for i in range(_arr.size):
-        if i == 0:
-            left_neighborhood = 0
-        else:
-            left_neighborhood = arr[max(0, i - winsize) : i]
-        if i >= _arr.size - 2:
-            right_neighborhood = 0
-        else:
-            right_neighborhood = arr[i + 1 : min(arr.size - 1, i + winsize)]
-
+        left_neighborhood = arr[max(0, i - winsize) : i] if i > 0 else 0
+        right_neighborhood = (
+            arr[i + 1 : min(arr.size - 1, i + winsize)] if i < _arr.size - 2 else 0
+        )
         if arr[i] < np.max(left_neighborhood) or arr[i] <= np.max(right_neighborhood):
             _arr[i] = 0
     return _arr
 
 
 def findChessboardCorners(img_arr_gray, noise_threshold=8000):
-    # Load image grayscale as an numpy array
-    # Return None on failure to find a chessboard
-    #
-    # noise_threshold: Ratio of standard deviation of hough values along an axis
-    # versus the number of pixels, manually measured  bad trigger images
-    # at < 5,000 and good  chessboards values at > 10,000
+    """
+    Find orthorectified chessboard corners in a grayscale image.
 
+    Parameters:
+    img_arr_gray (numpy array): Grayscale image array.
+    noise_threshold (int): Ratio of standard deviation of hough values along an axis
+        versus the number of pixels. Default is 8000.
+
+    Returns:
+    list: Chessboard corners [x0, y0, x1, y1] or None if not found.
+    """
     # Get gradients, split into positive and inverted negative components
     gx, gy = np.gradient(img_arr_gray)
     gx_pos = gx.copy()
@@ -61,7 +51,7 @@ def findChessboardCorners(img_arr_gray, noise_threshold=8000):
     gy_neg = -gy.copy()
     gy_neg[gy_neg < 0] = 0
 
-    # 1-D ampltitude of hough transform of gradients about X & Y axes
+    # 1-D amplitude of hough transform of gradients about X & Y axes
     num_px = img_arr_gray.shape[0] * img_arr_gray.shape[1]
     hough_gx = gx_pos.sum(axis=1) * gx_neg.sum(axis=1)
     hough_gy = gy_pos.sum(axis=0) * gy_neg.sum(axis=0)
@@ -223,9 +213,18 @@ def findChessboardCorners(img_arr_gray, noise_threshold=8000):
 
 
 def getAllSequences(seq, min_seq_len=7, err_px=5):
-    """Given sequence of increasing numbers, get all sequences with common
-    spacing (within err_px) that contain at least min_seq_len values"""
+    """
+    Given sequence of increasing numbers, get all sequences with common
+    spacing (within err_px) that contain at least min_seq_len values.
 
+    Parameters:
+    seq (list): Input sequence.
+    min_seq_len (int): Minimum sequence length. Default is 7.
+    err_px (int): Error tolerance in pixels. Default is 5.
+
+    Returns:
+    list: List of sequences.
+    """
     # Sanity check that there are enough values to satisfy
     if len(seq) < min_seq_len:
         return []
@@ -263,6 +262,16 @@ def getAllSequences(seq, min_seq_len=7, err_px=5):
 
 
 def getChessTilesColor(img, corners):
+    """
+    Get color tiles from a chessboard image.
+
+    Parameters:
+    img (PIL Image): Color image.
+    corners (list): Chessboard corners [x0, y0, x1, y1].
+
+    Returns:
+    numpy array: Color tiles.
+    """
     # img is a color RGB image
     # corners = (x0, y0, x1, y1) for top-left corner to bot-right corner of board
     height, width, depth = img.shape
@@ -293,7 +302,7 @@ def getChessTilesColor(img, corners):
         / 255.0
     )
 
-    # stack deep 64 tiles with 3 channesl RGB each
+    # stack deep 64 tiles with 3 channels RGB each
     # so, first 3 slabs are RGB for tile A1, then next 3 slabs for tile A2 etc.
     tiles = np.zeros([32, 32, 3 * 64], dtype=np.float32)  # color
     # Assume A1 is bottom left of image, need to reverse rank since images start
@@ -311,6 +320,16 @@ def getChessTilesColor(img, corners):
 
 
 def getChessBoardGray(img, corners):
+    """
+    Get grayscale chessboard image.
+
+    Parameters:
+    img (numpy array): Grayscale image array.
+    corners (list): Chessboard corners [x0, y0, x1, y1].
+
+    Returns:
+    numpy array: Grayscale chessboard image.
+    """
     # img is a grayscale image
     # corners = (x0, y0, x1, y1) for top-left corner to bot-right corner of board
     height, width = img.shape
@@ -341,11 +360,30 @@ def getChessBoardGray(img, corners):
 
 
 def getChessTilesGray(img, corners):
+    """
+    Get grayscale tiles from a chessboard image.
+
+    Parameters:
+    img (numpy array): Grayscale image array.
+    corners (list): Chessboard corners [x0, y0, x1, y1].
+
+    Returns:
+    numpy array: Grayscale tiles.
+    """
     chessboard_img_resized = getChessBoardGray(img, corners)
     return getTiles(chessboard_img_resized)
 
 
 def getTiles(processed_gray_img):
+    """
+    Get tiles from a grayscale chessboard image.
+
+    Parameters:
+    processed_gray_img (numpy array): Grayscale chessboard image.
+
+    Returns:
+    numpy array: Tiles.
+    """
     # Given 256x256 px normalized grayscale image of a chessboard (32x32px per tile)
     # NOTE (values must be in range 0-1)
     # Return a 32x32x64 tile array
@@ -365,7 +403,15 @@ def getTiles(processed_gray_img):
 
 
 def findGrayscaleTilesInImage(img):
-    """Find chessboard and convert into input tiles for CNN"""
+    """
+    Find chessboard and convert into input tiles for CNN.
+
+    Parameters:
+    img (PIL Image): Image.
+
+    Returns:
+    tuple: Tiles and chessboard corners.
+    """
     if img is None:
         return None, None
 
@@ -384,31 +430,13 @@ def findGrayscaleTilesInImage(img):
     return tiles, corners
 
 
-# DEBUG
-# from matplotlib import pyplot as plt
-# def plotTiles(tiles):
-#   """Plot color or grayscale tiles as 8x8 subplots"""
-#   plt.figure(figsize=(6,6))
-#   files = "ABCDEFGH"
-#   for rank in range(8): # rows (numbers)
-#     for file in range(8): # columns (letters)
-#       plt.subplot(8,8,(7-rank)*8 + file + 1) # Plot rank reverse order to match image
-
-#       if tiles.shape[2] == 64:
-#         # Grayscale
-#         tile = tiles[:,:,(rank*8+file)] # grayscale
-#         plt.imshow(tile, interpolation='None', cmap='gray', vmin = 0, vmax = 1)
-#       else:
-#         #Color
-#         tile = tiles[:,:,3*(rank*8+file):3*(rank*8+file+1)] # color
-#         plt.imshow(tile, interpolation='None',)
-
-#       plt.axis('off')
-#       plt.title('%s %d' % (files[file], rank+1), fontsize=6)
-#   plt.show()
-
-
 def main(url):
+    """
+    Main function.
+
+    Parameters:
+    url (str): Image URL.
+    """
     print("Loading url %s..." % url)
     color_img, url = loadImageFromURL(url)
 
@@ -456,15 +484,6 @@ if __name__ == "__main__":
         nargs="*",
         help="Input image urls",
     )
-    # main('http://www.chessanytime.com/img/jeudirect/simplechess.png')
-    # main('https://i.imgur.com/JpzfV3y.jpg')
-    # main('https://i.imgur.com/jsCKzU9.jpg')
-    # main('https://i.imgur.com/49htmMA.png')
-    # main('https://i.imgur.com/HHdHGBX.png')
-    # main('http://imgur.com/By2xJkO')
-    # main('http://imgur.com/p8DJMly')
-    # main('https://i.imgur.com/Ns0iBrw.jpg')
-    # main('https://i.imgur.com/KLcCiuk.jpg')
     args = parser.parse_args()
     for url in args.urls:
         main(url)

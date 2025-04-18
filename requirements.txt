@@ -3,3 +3,5 @@ numpy
 Pillow
 requests
 beautifulsoup4
+python-chess
+stockfish
