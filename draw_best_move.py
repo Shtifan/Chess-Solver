@@ -48,14 +48,16 @@ def draw_best_move(
     corners = chessboard_finder.findChessboardCorners(img_arr)
     if corners is None:
         raise ValueError("Couldn't find chessboard in image.")
-
-    cropped = crop_chessboard(img, corners)
-    cropped = cropped.convert("RGB")
-    draw = ImageDraw.Draw(cropped)
-
-    w, h = cropped.size
-    square_w = w / 8
-    square_h = h / 8
+    
+    original_img = img.convert("RGB")
+    draw = ImageDraw.Draw(original_img)
+    
+    x0, y0, x1, y1 = corners
+    
+    board_width = x1 - x0
+    board_height = y1 - y0
+    square_w = board_width / 8
+    square_h = board_height / 8
 
     if white_move:
         src, dst = white_move[:2], white_move[2:]
@@ -63,12 +65,12 @@ def draw_best_move(
         dst_file, dst_rank = algebraic_to_coords(dst)
 
         src_xy = (
-            src_file * square_w + square_w / 2,
-            src_rank * square_h + square_h / 2,
+            y0 + src_file * square_w + square_w / 2,
+            x0 + src_rank * square_h + square_h / 2,
         )
         dst_xy = (
-            dst_file * square_w + square_w / 2,
-            dst_rank * square_h + square_h / 2,
+            y0 + dst_file * square_w + square_w / 2,
+            x0 + dst_rank * square_h + square_h / 2,
         )
 
         draw_arrow(
@@ -86,12 +88,12 @@ def draw_best_move(
         dst_file, dst_rank = algebraic_to_coords(dst)
 
         src_xy = (
-            src_file * square_w + square_w / 2,
-            src_rank * square_h + square_h / 2,
+            y0 + src_file * square_w + square_w / 2,
+            x0 + src_rank * square_h + square_h / 2,
         )
         dst_xy = (
-            dst_file * square_w + square_w / 2,
-            dst_rank * square_h + square_h / 2,
+            y0 + dst_file * square_w + square_w / 2,
+            x0 + dst_rank * square_h + square_h / 2,
         )
 
         draw_arrow(
@@ -103,9 +105,11 @@ def draw_best_move(
             arrowhead=int(min(square_w, square_h) // 2.5),
         )
 
-    if not output_path:
+    draw.rectangle([(y0, x0), (y1, x1)], outline=(0, 255, 0), width=2)
+
+    if output_path is None:
         output_path = OUTPUT_PATH
-    cropped.save(output_path)
+    original_img.save(output_path)
     return output_path
 
 
