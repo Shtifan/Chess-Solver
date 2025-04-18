@@ -4,65 +4,73 @@ import os
 def get_best_move(fen, depth=15, time_limit=1.0):
     """
     Get the best move for a given position using Stockfish.
-    
-    Args:
-        fen (str): The FEN string representing the chess position
-        depth (int): Search depth (default: 15)
-        time_limit (float): Time limit in seconds (default: 1.0)
-    
-    Returns:
-        tuple: (best_move, evaluation, top_moves)
     """
+    if not fen:
+        print("Error: No FEN string provided")
+        return None, None, None
+        
     try:
-        # Initialize Stockfish (adjust the path to where Stockfish is installed)
-        stockfish = Stockfish(path="stockfish")
+        # Initialize Stockfish
+        stockfish = Stockfish(path="stockfish.exe")
         
         # Set engine parameters
         stockfish.set_depth(depth)
-        stockfish.set_skill_level(20)  # Maximum skill level
+        stockfish.set_skill_level(20)
         
-        # Set the position
+        # Clean and validate FEN
+        fen = fen.strip()
+        print(f"Analyzing position: {fen}")
+        
         if not stockfish.is_fen_valid(fen):
-            raise ValueError("Invalid FEN string")
+            print(f"Invalid FEN format: {fen}")
+            return None, None, None
+            
         stockfish.set_fen_position(fen)
         
-        # Get the best move
-        best_move = stockfish.get_best_move_time(time_limit * 1000)  # Convert to milliseconds
-        
-        # Get the evaluation
+        # Get the best move with time limit
+        best_move = stockfish.get_best_move_time(int(time_limit * 1000))
+        if not best_move:
+            print("No legal moves found")
+            return None, None, None
+            
+        # Get evaluation and top moves
         evaluation = stockfish.get_evaluation()
-        
-        # Get top moves
         top_moves = stockfish.get_top_moves(3)
         
         return best_move, evaluation, top_moves
         
     except Exception as e:
-        print(f"Error analyzing position: {str(e)}")
+        print(f"Error in Stockfish analysis: {str(e)}")
+        if "stockfish" in str(e).lower():
+            print("Make sure stockfish.exe is in the same directory")
         return None, None, None
 
 def analyze_from_image(image_path):
     """
-    Analyze a chess position from an image and return only the best move.
+    Analyze a chess position from an image.
     """
-    # Import the FEN extractor
     from fen_extractor import get_fen_from_image
     
-    # Get FEN from image
+    print(f"Analyzing image: {image_path}")
     fen = get_fen_from_image(image_path)
+    
     if not fen:
         print("Failed to extract FEN from image")
         return
     
-    # Get best move analysis
-    best_move, evaluation, _ = get_best_move(fen)
+    best_move, evaluation, top_moves = get_best_move(fen)
     
     if best_move:
+        print(f"\nAnalysis Results:")
         print(f"Best Move: {best_move}")
+        print(f"Evaluation: {evaluation}")
+        if top_moves:
+            print("\nTop 3 Moves:")
+            for move in top_moves:
+                print(f"- {move}")
     else:
-        print("Failed to analyze position")
+        print("Failed to find best move")
 
 if __name__ == "__main__":
-    # Example usage
     image_path = r"C:\Users\sstoy\Documents\Programing\Projects\Chess Solver\chessboard.jpg"
-    analyze_from_image(image_path) 
+    analyze_from_image(image_path)

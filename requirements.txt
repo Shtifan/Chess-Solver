@@ -1,6 +1,7 @@
 selenium==4.15.2
 webdriver-manager==4.0.1
-stockfish==3.28.0
+tensorflow>=2.0.0
 opencv-python==4.8.1.78
 numpy==1.24.3
-Pillow==10.0.0 
+Pillow==10.0.0
+stockfish==3.28.0

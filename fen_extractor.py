@@ -21,49 +21,89 @@ def get_chrome_version():
     return None
 
 def get_fen_from_image(image_path):
-    # Set up minimal Chrome options for speed
+    # Set up Chrome options
     chrome_options = Options()
     chrome_options.add_argument('--headless=new')
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument('--disable-gpu')
-    chrome_options.add_argument('--window-size=800,600')  # Reduced window size
     chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
     
     driver = None
     try:
-        # Initialize Chrome driver with shorter timeout
+        # Initialize Chrome driver
         service = Service()
         driver = webdriver.Chrome(service=service, options=chrome_options)
-        driver.set_page_load_timeout(20)
+        driver.set_page_load_timeout(30)
         
         # Navigate to the website
         driver.get("https://elucidation.github.io/ChessboardFenTensorflowJs/")
         
-        # Wait for file input with shorter timeout
-        file_input = WebDriverWait(driver, 5).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='file']"))
+        # Wait for the page to be fully loaded
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "canvas"))
         )
         
-        # Upload the image
+        # Wait for file input and upload image
+        file_input = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='file']"))
+        )
         file_input.send_keys(os.path.abspath(image_path))
         
-        # Wait for FEN with shorter intervals
-        fen_text = None
-        for _ in range(10):  # More frequent checks
-            elements = driver.find_elements(By.XPATH, "//*[contains(text(), '/')]")
-            for element in elements:
-                text = element.text.strip()
-                if '/' in text and any(c.isdigit() for c in text) and len(text) > 10:
-                    fen_text = text
-                    break
-            if fen_text:
-                break
-            time.sleep(0.5)  # Shorter sleep intervals
+        # Initial wait after upload to let the model process
+        time.sleep(5)
+        
+        # Wait for FEN text to appear and stabilize
+        previous_fen = None
+        stable_count = 0
+        max_attempts = 40
+        for attempt in range(max_attempts):
+            # Try multiple possible selectors where FEN might appear
+            selectors = [
+                "//div[contains(@class, 'fen')]",
+                "//div[contains(@class, 'output')]",
+                "//p[contains(text(), '/')]",
+                "//*[contains(text(), '/') and string-length() > 20]"
+            ]
             
-        return fen_text
+            current_fen = None
+            for selector in selectors:
+                elements = driver.find_elements(By.XPATH, selector)
+                for element in elements:
+                    text = element.text.strip()
+                    if ('/' in text and 
+                        text.count('/') == 7 and
+                        any(c.isdigit() or c.lower() in 'kqrbnp' for c in text)):
+                        parts = text.split()
+                        candidate_fen = parts[0]
+                        # Additional validation to ensure it's a valid FEN
+                        if all(c.isdigit() or c.lower() in 'kqrbnp/' for c in candidate_fen):
+                            current_fen = candidate_fen
+                            print(f"Current FEN (attempt {attempt + 1}): {current_fen}")
+                            break
+                if current_fen:
+                    break
+            
+            if current_fen:
+                if current_fen == previous_fen:
+                    stable_count += 1
+                    if stable_count >= 5:  # Increased stability requirement
+                        print(f"FEN stabilized after {attempt + 1} attempts")
+                        return current_fen
+                else:
+                    stable_count = 0
+                previous_fen = current_fen
+            
+            time.sleep(1.5)  # Increased wait time between attempts
+            
+        if previous_fen:
+            print("Warning: FEN extraction timed out, returning last stable FEN")
+            return previous_fen
+            
+        print("Failed to extract FEN from image")
+        return None
         
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
+        print(f"Error in FEN extraction: {str(e)}")
         return None
         
     finally:
@@ -79,4 +119,4 @@ if __name__ == "__main__":
     if fen:
         print(f"FEN: {fen}")
     else:
-        print("Failed to extract FEN") 
+        print("Failed to extract FEN")
