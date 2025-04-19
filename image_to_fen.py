@@ -1,5 +1,6 @@
 import os
 import re
+import argparse
 import numpy as np
 import PIL.Image
 import tensorflow as tf
@@ -95,20 +96,26 @@ class ChessboardPredictor:
 
 
 def main() -> None:
-    image_path = IMAGE_PATH
-    unflip = False
+    parser = argparse.ArgumentParser(description='Extract FEN from a chessboard image')
+    parser.add_argument('--invert_fen', action='store_true', help='Invert FEN so white pieces are on bottom')
+    args = parser.parse_args()
+    
+    unflip = args.invert_fen
     active = "w"
-    img = load_image.load_image(image_path)
+    
+    img = load_image.load_image(IMAGE_PATH)
     if img is None:
-        raise Exception(f"Couldn't load image: {image_path}")
+        raise Exception(f"Couldn't load image: {IMAGE_PATH}")
     tiles, corners = chessboard_finder.findGrayscaleTilesInImage(img)
     if tiles is None:
         raise Exception("Couldn't find chessboard in image")
     predictor = ChessboardPredictor()
     fen, tile_certainties = predictor.get_prediction(tiles)
     predictor.close()
+    
     if unflip:
         fen = unflip_fen(fen)
+        
     short_fen = shorten_fen(fen)
     certainty = tile_certainties.min()
     print("Per-tile certainty:")
@@ -118,6 +125,8 @@ def main() -> None:
     )
     print(f"---\nPredicted FEN:\n{short_fen} {active} - - 0 1")
     print(f"Final Certainty: {certainty * 100:.1f}%")
+    
+    return short_fen
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 import chessboard_finder
 import load_image
+import argparse
 from config import IMAGE_PATH, OUTPUT_PATH
 
 
@@ -116,14 +117,15 @@ def draw_best_move(
 if __name__ == "__main__":
     import sys
 
-    if len(sys.argv) < 3:
-        print(
-            "Usage: python draw_best_move.py <image_path> <white_move> [black_move] [output_path]"
-        )
-        sys.exit(1)
-    image_path = sys.argv[1] if len(sys.argv) > 1 else IMAGE_PATH
-    white_move = sys.argv[2]
-    black_move = sys.argv[3] if len(sys.argv) > 3 else None
-    output_path = sys.argv[4] if len(sys.argv) > 4 else None
-    out = draw_best_move(image_path, white_move, black_move, output_path)
+    parser = argparse.ArgumentParser(description="Draw the best moves on a chessboard image.")
+    parser.add_argument('--invert_fen', action='store_true', help='Invert FEN so white pieces are on bottom')
+    parser.add_argument('--white_move', required=True, help='The best move for white in UCI format (e.g. "e2e4")')
+    parser.add_argument('--black_move', help='The best move for black in UCI format (e.g. "e7e5")')
+    
+    args = parser.parse_args()
+    
+    white_move = args.white_move
+    black_move = args.black_move
+    
+    out = draw_best_move(IMAGE_PATH, white_move, black_move, OUTPUT_PATH)
     print(f"Saved: {out}")

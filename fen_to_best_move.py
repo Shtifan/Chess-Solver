@@ -1,5 +1,6 @@
 import sys
 import re
+import argparse
 from image_to_fen import ChessboardPredictor
 import load_image
 from config import IMAGE_PATH, STOCKFISH_PATH
@@ -26,11 +27,11 @@ def lengthen_fen(fen: str) -> str:
     return result
 
 
-def get_fen_from_image(image_path: str = IMAGE_PATH) -> str:
+def get_fen_from_image(invert_fen: bool = False) -> str:
     predictor = ChessboardPredictor()
-    img = load_image.load_image(image_path)
+    img = load_image.load_image(IMAGE_PATH)
     if img is None:
-        raise Exception(f"Couldn't load image: {image_path}")
+        raise Exception(f"Couldn't load image: {IMAGE_PATH}")
     img = load_image.resize_image(img)
     tiles, _ = None, None
     try:
@@ -45,6 +46,11 @@ def get_fen_from_image(image_path: str = IMAGE_PATH) -> str:
         return None
     fen, _ = predictor.get_prediction(tiles)
     predictor.close()
+    
+    # Invert FEN if requested to ensure white pieces are on bottom
+    if invert_fen:
+        fen = unflip_fen(fen)
+        
     return fen
 
 
@@ -72,14 +78,25 @@ def fen_to_best_moves(fen):
 
 
 def main():
-    fen = get_fen_from_image()
+    parser = argparse.ArgumentParser(description='Extract FEN from image and calculate best moves')
+    parser.add_argument('--invert_fen', action='store_true', help='Invert FEN so white pieces are on bottom')
+    parser.add_argument('--fen', help='Provide FEN directly instead of extracting from image')
+    args = parser.parse_args()
+
+    if args.fen:
+        fen = args.fen
+    else:
+        fen = get_fen_from_image(args.invert_fen)
+        
     if fen is None:
         print("Failed to extract FEN from image.")
         sys.exit(1)
+        
     print(f"Predicted FEN: {fen}")
     white_move, black_move = fen_to_best_moves(fen)
     print(f"Best move for White: {white_move}")
     print(f"Best move for Black: {black_move}")
+    return white_move, black_move
 
 
 if __name__ == "__main__":
