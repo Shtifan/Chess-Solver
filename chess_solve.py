@@ -2,10 +2,9 @@ import os
 import sys
 import subprocess
 import argparse
-from config import IMAGE_PATH, STOCKFISH_PATH
+from config import STOCKFISH_PATH, IMAGE_PATH
 
 def main():
-    # Parse command line arguments
     parser = argparse.ArgumentParser(description='Analyze a chess position from an image and find the best moves.')
     parser.add_argument('--invert_fen', action='store_true', help='Invert FEN so white pieces are on bottom')
     args = parser.parse_args()
@@ -26,12 +25,11 @@ def main():
 
         tiles, corners = chessboard_finder.findGrayscaleTilesInImage(img)
         if tiles is None:
-            print("Couldn't find chessboard in image")
+            print("Couldn't find chessboard in image.")
             sys.exit(1)
         fen, tile_certainties = predictor.get_prediction(tiles)
         predictor.close()
         
-        # Invert FEN if requested to ensure white pieces are on bottom
         if args.invert_fen:
             fen = unflip_fen(fen)
             
@@ -57,7 +55,12 @@ def main():
     try:
         from draw_best_move import draw_best_move
 
-        output_path = draw_best_move(IMAGE_PATH, white_move, black_move)
+        output_path = draw_best_move(
+            white_move=white_move,
+            black_move=black_move,
+            output_path=os.path.join(os.path.dirname(__file__), 'solved_chessboard.png'),
+            invert_fen=args.invert_fen
+        )
         print(f"Saved: {output_path}")
     except Exception as e:
         print(f"Error drawing best moves: {e}")

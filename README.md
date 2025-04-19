@@ -34,10 +34,10 @@ Chess Solver automates the process of:
 Run the main script with:
 
 ```
-python chess_solve.py
+python chess_solve.py [--invert_fen]
 ```
 
-This will analyze the default image specified in config.py and output a solved image.
+This will analyze the image specified in config.py and output a solved image.
 
 ### Command-Line Options
 
@@ -85,6 +85,9 @@ Edit the `config.py` file to modify:
 - Output image path
 - Stockfish engine path
 - Model path
+
+The model path and image path are now set in `config.py` only. Do not pass them as command-line arguments.
+To change which image or model is used, edit `IMAGE_PATH` or `MODEL_PATH` in `config.py`.
 
 ## How It Works
 

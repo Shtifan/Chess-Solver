@@ -42,15 +42,16 @@ def load_graph(model_filepath: str) -> tf.Graph:
 
 
 class ChessboardPredictor:
-    def __init__(self, model_path: str = "saved_models/model.pb"):
-        print(f"\t Loading model '{model_path}'")
+    def __init__(self, model_path: str = None):
+        from config import MODEL_PATH
+        if model_path is None:
+            model_path = MODEL_PATH
         graph = load_graph(model_path)
         self.sess = tf.compat.v1.Session(graph=graph)
         self.x = graph.get_tensor_by_name("tcb/Input:0")
         self.keep_prob = graph.get_tensor_by_name("tcb/KeepProb:0")
         self.prediction = graph.get_tensor_by_name("tcb/prediction:0")
         self.probabilities = graph.get_tensor_by_name("tcb/probabilities:0")
-        print("\t Model restored.")
 
     def get_prediction(self, tiles: np.ndarray) -> tuple:
         if tiles is None or len(tiles) == 0:
@@ -82,7 +83,7 @@ class ChessboardPredictor:
             return result
         tiles, corners = chessboard_finder.findGrayscaleTilesInImage(img)
         if tiles is None:
-            print("Couldn't find chessboard in image")
+            print("Couldn't find chessboard in image.")
             return result
         fen, tile_certainties = self.get_prediction(tiles)
         certainty = tile_certainties.min()
@@ -91,7 +92,6 @@ class ChessboardPredictor:
         return result
 
     def close(self) -> None:
-        print("Closing session.")
         self.sess.close()
 
 
@@ -108,7 +108,7 @@ def main() -> None:
         raise Exception(f"Couldn't load image: {IMAGE_PATH}")
     tiles, corners = chessboard_finder.findGrayscaleTilesInImage(img)
     if tiles is None:
-        raise Exception("Couldn't find chessboard in image")
+        raise Exception("Couldn't find chessboard in image.")
     predictor = ChessboardPredictor()
     fen, tile_certainties = predictor.get_prediction(tiles)
     predictor.close()

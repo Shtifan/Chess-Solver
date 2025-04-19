@@ -41,13 +41,12 @@ def get_fen_from_image(invert_fen: bool = False) -> str:
         predictor.close()
         return None
     if tiles is None:
-        print("Couldn't find chessboard in image")
+        print("Couldn't find chessboard in image.")
         predictor.close()
         return None
     fen, _ = predictor.get_prediction(tiles)
     predictor.close()
     
-    # Invert FEN if requested to ensure white pieces are on bottom
     if invert_fen:
         fen = unflip_fen(fen)
         
