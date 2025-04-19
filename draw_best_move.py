@@ -1,5 +1,5 @@
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import ImageDraw
 import chessboard_finder
 import load_image
 import argparse

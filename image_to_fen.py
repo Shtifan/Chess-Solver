@@ -1,8 +1,6 @@
-import os
 import re
 import argparse
 import numpy as np
-import PIL.Image
 import tensorflow as tf
 import load_image
 import chessboard_finder

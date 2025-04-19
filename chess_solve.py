@@ -1,8 +1,7 @@
 import os
 import sys
-import subprocess
 import argparse
-from config import STOCKFISH_PATH, IMAGE_PATH
+from config import IMAGE_PATH
 
 def main():
     parser = argparse.ArgumentParser(description='Analyze a chess position from an image and find the best moves.')
