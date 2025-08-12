@@ -1,9 +1,2 @@
-__pycache__/
-*.jpg
-*.jpeg
 *.png
-*.gif
-*.bmp
-*.tiff
-*.svg
-stockfish.exe
+__pycache__
